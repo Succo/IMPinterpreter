@@ -121,7 +121,7 @@ func (i *Interpreter) scanInt(r rune) string {
 }
 
 // scan scans the next lexeme
-func (i *Interpreter) scan() {
+func (i *Interpreter) scan() bool {
 	r := i.read()
 	switch {
 	case unicode.IsSpace(r):
@@ -168,12 +168,20 @@ func (i *Interpreter) scan() {
 			i.addToken(Variable, w)
 		}
 	case unicode.IsNumber(r):
-		w := i.scanInt()
+		w := i.scanInt(r)
 		i.addToken(Int, w)
+	case r == eof:
+		i.addToken(Eof, "")
+		return false
 	default:
 		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
 	}
+	return true
+}
 
+func (i *Interpreter) Scan() {
+	for i.scan() {
+	}
 }
 
 // isValidCharacter returns true is the rune is an acceptable character (only letter)
