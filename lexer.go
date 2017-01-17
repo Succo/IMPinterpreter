@@ -15,6 +15,10 @@ const (
 	Minus
 	Time
 
+	// Separator
+	LeftParen
+	RightParen
+
 	// Operator on bool
 	True
 	False
@@ -49,13 +53,13 @@ type Token struct {
 
 type Interpreter struct {
 	sigma   map[string]int
-	prog    bufio.Reader
+	prog    *bufio.Reader
 	scanned []Token
 
 	line int
 }
 
-func newInterpreter(in bufio.Reader) *Interpreter {
+func NewInterpreter(in *bufio.Reader) *Interpreter {
 	sigma := make(map[string]int)
 	scanned := make([]Token, 0)
 	return &Interpreter{sigma: sigma, prog: in, scanned: scanned, line: 0}
@@ -97,9 +101,6 @@ func (i *Interpreter) scanWord(r rune) string {
 		buf.WriteRune(r)
 		r = i.read()
 	}
-	if !unicode.IsSpace(r) {
-		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
-	}
 	i.unread()
 	return buf.String()
 }
@@ -112,9 +113,6 @@ func (i *Interpreter) scanInt(r rune) string {
 	for unicode.IsDigit(r) {
 		buf.WriteRune(r)
 		r = i.read()
-	}
-	if !unicode.IsSpace(r) {
-		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
 	}
 	i.unread()
 	return buf.String()
@@ -135,6 +133,10 @@ func (i *Interpreter) scan() bool {
 		i.addToken(Time, "*")
 	case r == '=':
 		i.addToken(Equal, "=")
+	case r == '(':
+		i.addToken(LeftParen, "(")
+	case r == ')':
+		i.addToken(RightParen, ")")
 	case r == '!': // ¬ is too weird of a character
 		i.addToken(Not, "!")
 	case r == '|': // ∧ is too weird of a character
@@ -174,7 +176,7 @@ func (i *Interpreter) scan() bool {
 		i.addToken(Eof, "")
 		return false
 	default:
-		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
+		panic(fmt.Sprintf("Unknown character %s on line %d", string(r), i.line))
 	}
 	return true
 }
@@ -188,8 +190,4 @@ func (i *Interpreter) Scan() {
 func isValidCharacter(r rune) bool {
 	return ('a' <= r && 'z' >= r) ||
 		('A' <= r && 'Z' >= r)
-}
-
-func main() {
-	fmt.Println("vim-go")
 }
