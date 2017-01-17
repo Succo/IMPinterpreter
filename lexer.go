@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"unicode"
 )
 
 type tokenType int
@@ -24,6 +26,7 @@ const (
 
 	// Instructions keyword
 	Skip
+	Assign
 	Semicolon
 	While
 	Do
@@ -79,8 +82,104 @@ func (i *Interpreter) peek() rune {
 	return ch
 }
 
-func (i *Interpreter) scan() {
+// addToken add a parsed token to the token list
+func (i *Interpreter) addToken(ttype tokenType, lexeme string) {
+	t := Token{ttype, lexeme, i.line}
+	i.scanned = append(i.scanned, t)
+}
 
+// scanWord scan a word ans returns its value
+func (i *Interpreter) scanWord(r rune) string {
+	var buf bytes.Buffer
+	buf.WriteRune(r)
+	r = i.read()
+	for isValidCharacter(r) {
+		buf.WriteRune(r)
+		r = i.read()
+	}
+	if !unicode.IsSpace(r) {
+		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
+	}
+	i.unread()
+	return buf.String()
+}
+
+// scanInt scan an int and return its value
+func (i *Interpreter) scanInt(r rune) string {
+	var buf bytes.Buffer
+	buf.WriteRune(r)
+	r = i.read()
+	for unicode.IsDigit(r) {
+		buf.WriteRune(r)
+		r = i.read()
+	}
+	if !unicode.IsSpace(r) {
+		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
+	}
+	i.unread()
+	return buf.String()
+}
+
+// scan scans the next lexeme
+func (i *Interpreter) scan() {
+	r := i.read()
+	switch {
+	case unicode.IsSpace(r):
+	case r == '\n':
+		i.line++
+	case r == '+':
+		i.addToken(Plus, "+")
+	case r == '-':
+		i.addToken(Minus, "-")
+	case r == '*':
+		i.addToken(Time, "*")
+	case r == '=':
+		i.addToken(Equal, "=")
+	case r == '!': // ¬ is too weird of a character
+		i.addToken(Not, "!")
+	case r == '|': // ∧ is too weird of a character
+		i.read()
+		i.addToken(Or, "||")
+	case r == '&': // ∨ is too weird of a character
+		i.read()
+		i.addToken(Or, "&&")
+	case r == '<':
+		i.read() // No weird checking because < is reserved and only used here
+		i.addToken(LessEqual, "<=")
+	case r == ':':
+		i.read() // No weird checking because : is reserved and only used here
+		i.addToken(Assign, ":=")
+	case isValidCharacter(r):
+		w := i.scanWord(r)
+		switch w {
+		case "true":
+			i.addToken(True, "true")
+		case "false":
+			i.addToken(False, "false")
+		case "skip":
+			i.addToken(Skip, "skip")
+		case "while":
+			i.addToken(While, "while")
+		case "do":
+			i.addToken(Do, "do")
+		case "if":
+			i.addToken(If, "if")
+		default:
+			i.addToken(Variable, w)
+		}
+	case unicode.IsNumber(r):
+		w := i.scanInt()
+		i.addToken(Int, w)
+	default:
+		panic(fmt.Sprintf("Unknown character %s on line %d", r, i.line))
+	}
+
+}
+
+// isValidCharacter returns true is the rune is an acceptable character (only letter)
+func isValidCharacter(r rune) bool {
+	return ('a' <= r && 'z' >= r) ||
+		('A' <= r && 'Z' >= r)
 }
 
 func main() {
