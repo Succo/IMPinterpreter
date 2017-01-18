@@ -137,7 +137,7 @@ type WhileInst struct {
 }
 
 func (w WhileInst) apply(s *State) *State {
-	tempP := Prog{s: s, i: w.loop}
+	tempP := Interpreter{s: s, i: w.loop}
 	for w.cond.evaluate(s) {
 		s = tempP.execute()
 	}
@@ -151,29 +151,28 @@ type IfInst struct {
 }
 
 func (i IfInst) apply(s *State) *State {
-	var tempP *Prog
+	var tempP *Interpreter
 	if i.cond.evaluate(s) {
-		tempP = &Prog{s: s, i: i.path1}
+		tempP = &Interpreter{s: s, i: i.path1}
 	} else {
-		tempP = &Prog{s: s, i: i.path1}
+		tempP = &Interpreter{s: s, i: i.path1}
 	}
 	return tempP.execute()
 }
 
-type Prog struct {
+type Interpreter struct {
 	s *State
 	i []Instruction
 }
 
-func (p *Prog) execute() *State {
-	for _, inst := range p.i {
-		p.s = inst.apply(p.s)
+func (i *Interpreter) execute() *State {
+	for _, inst := range i.i {
+		i.s = inst.apply(i.s)
 	}
-	return p.s
+	return i.s
 }
 
-func NewProg() *Prog {
+func NewInterpreter(insts []Instruction) *Interpreter {
 	s := &State{make(map[string]int)}
-	i := make([]Instruction, 0)
-	return &Prog{s: s, i: i}
+	return &Interpreter{s: s, i: insts}
 }

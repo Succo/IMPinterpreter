@@ -53,7 +53,7 @@ type Token struct {
 	line   int
 }
 
-type Interpreter struct {
+type Lexer struct {
 	sigma   map[string]int
 	prog    *bufio.Reader
 	scanned []Token
@@ -61,137 +61,139 @@ type Interpreter struct {
 	line int
 }
 
-func NewInterpreter(in *bufio.Reader) *Interpreter {
+func NewLexer(in *bufio.Reader) *Lexer {
 	sigma := make(map[string]int)
 	scanned := make([]Token, 0)
-	return &Interpreter{sigma: sigma, prog: in, scanned: scanned, line: 0}
+	return &Lexer{sigma: sigma, prog: in, scanned: scanned, line: 0}
 }
 
-func (i *Interpreter) read() rune {
-	ch, _, err := i.prog.ReadRune()
+func (l *Lexer) read() rune {
+	ch, _, err := l.prog.ReadRune()
 	if err != nil {
 		return eof
 	}
 	return ch
 }
 
-func (i *Interpreter) unread() {
-	_ = i.prog.UnreadRune()
+func (l *Lexer) unread() {
+	_ = l.prog.UnreadRune()
 }
 
-func (i *Interpreter) peek() rune {
-	ch, _, err := i.prog.ReadRune()
+func (l *Lexer) peek() rune {
+	ch, _, err := l.prog.ReadRune()
 	if err != nil {
 		ch = eof
 	}
-	i.prog.UnreadRune()
+	l.prog.UnreadRune()
 	return ch
 }
 
 // addToken add a parsed token to the token list
-func (i *Interpreter) addToken(ttype tokenType, lexeme string) {
-	t := Token{ttype, lexeme, i.line}
-	i.scanned = append(i.scanned, t)
+func (l *Lexer) addToken(ttype tokenType, lexeme string) {
+	t := Token{ttype, lexeme, l.line}
+	l.scanned = append(l.scanned, t)
 }
 
 // scanWord scan a word ans returns its value
-func (i *Interpreter) scanWord(r rune) string {
+func (l *Lexer) scanWord(r rune) string {
 	var buf bytes.Buffer
 	buf.WriteRune(r)
-	r = i.read()
+	r = l.read()
 	for isValidCharacter(r) {
 		buf.WriteRune(r)
-		r = i.read()
+		r = l.read()
 	}
-	i.unread()
+	l.unread()
 	return buf.String()
 }
 
 // scanInt scan an int and return its value
-func (i *Interpreter) scanInt(r rune) string {
+func (l *Lexer) scanInt(r rune) string {
 	var buf bytes.Buffer
 	buf.WriteRune(r)
-	r = i.read()
+	r = l.read()
 	for unicode.IsDigit(r) {
 		buf.WriteRune(r)
-		r = i.read()
+		r = l.read()
 	}
-	i.unread()
+	l.unread()
 	return buf.String()
 }
 
 // scan scans the next lexeme
-func (i *Interpreter) scan() bool {
-	r := i.read()
+func (l *Lexer) scan() bool {
+	r := l.read()
 	switch {
 	case unicode.IsSpace(r):
 	case r == '\n':
-		i.line++
+		l.line++
 	case r == '+':
-		i.addToken(Plus, "+")
+		l.addToken(Plus, "+")
 	case r == '-':
-		i.addToken(Minus, "-")
+		l.addToken(Minus, "-")
 	case r == '*':
-		i.addToken(Time, "*")
+		l.addToken(Time, "*")
 	case r == '=':
-		i.addToken(Equal, "=")
+		l.addToken(Equal, "=")
 	case r == '(':
-		i.addToken(LeftParen, "(")
+		l.addToken(LeftParen, "(")
 	case r == ')':
-		i.addToken(RightParen, ")")
+		l.addToken(RightParen, ")")
+	case r == ';':
+		l.addToken(Semicolon, ";")
 	case r == '!': // ¬ is too weird of a character
-		i.addToken(Not, "!")
+		l.addToken(Not, "!")
 	case r == '|': // ∧ is too weird of a character
-		i.read()
-		i.addToken(Or, "||")
+		l.read()
+		l.addToken(Or, "||")
 	case r == '&': // ∨ is too weird of a character
-		i.read()
-		i.addToken(Or, "&&")
+		l.read()
+		l.addToken(Or, "&&")
 	case r == '<':
-		i.read() // No weird checking because < is reserved and only used here
-		i.addToken(LessEqual, "<=")
+		l.read() // No weird checking because < is reserved and only used here
+		l.addToken(LessEqual, "<=")
 	case r == ':':
-		i.read() // No weird checking because : is reserved and only used here
-		i.addToken(Assign, ":=")
+		l.read() // No weird checking because : is reserved and only used here
+		l.addToken(Assign, ":=")
 	case isValidCharacter(r):
-		w := i.scanWord(r)
+		w := l.scanWord(r)
 		switch w {
 		case "true":
-			i.addToken(True, "true")
+			l.addToken(True, "true")
 		case "false":
-			i.addToken(False, "false")
+			l.addToken(False, "false")
 		case "skip":
-			i.addToken(Skip, "skip")
+			l.addToken(Skip, "skip")
 		case "while":
-			i.addToken(While, "while")
+			l.addToken(While, "while")
 		case "do":
-			i.addToken(Do, "do")
+			l.addToken(Do, "do")
 		case "if":
-			i.addToken(If, "if")
+			l.addToken(If, "if")
 		case "then":
-			i.addToken(Then, "then")
+			l.addToken(Then, "then")
 		case "else":
-			i.addToken(Then, "else")
+			l.addToken(Then, "else")
 		default:
-			i.addToken(Variable, w)
+			l.addToken(Variable, w)
 		}
 	case unicode.IsNumber(r):
-		w := i.scanInt(r)
-		i.addToken(Int, w)
+		w := l.scanInt(r)
+		l.addToken(Int, w)
 	case r == eof:
-		i.addToken(Eof, "")
+		l.addToken(Eof, "")
 		return false
 	default:
-		panic(fmt.Sprintf("Unknown character %s on line %d", string(r), i.line))
+		panic(fmt.Sprintf("Unknown character %s on line %d", string(r), l.line))
 	}
 	return true
 }
 
 // Scan the input stream and build the list of scanned token
-func (i *Interpreter) Scan() parser {
-	for i.scan() {
+func (l *Lexer) Scan() parser {
+	for l.scan() {
 	}
-	return parser{i.scanned, make([]Instruction, 0)}
+	return parser{l.scanned, make([]Instruction, 0)}
 }
 
 // isValidCharacter returns true is the rune is an acceptable character (only letter)

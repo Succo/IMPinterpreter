@@ -19,8 +19,10 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	i := NewInterpreter(bufio.NewReader(file))
-	p := i.Scan()
-	prog := NewProg()
-	prog.i = p.parseInst()
+	l := NewLexer(bufio.NewReader(file))
+	p := l.Scan()
+	i := NewInterpreter(p.parseInst())
+	s := i.execute()
+	fmt.Println(i.i)
+	fmt.Println(s.val)
 }
