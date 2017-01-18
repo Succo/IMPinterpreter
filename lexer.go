@@ -35,6 +35,8 @@ const (
 	While
 	Do
 	If
+	Then
+	Else
 
 	// Identifier
 	Int
@@ -166,6 +168,10 @@ func (i *Interpreter) scan() bool {
 			i.addToken(Do, "do")
 		case "if":
 			i.addToken(If, "if")
+		case "then":
+			i.addToken(Then, "then")
+		case "else":
+			i.addToken(Then, "else")
 		default:
 			i.addToken(Variable, w)
 		}
@@ -182,9 +188,10 @@ func (i *Interpreter) scan() bool {
 }
 
 // Scan the input stream and build the list of scanned token
-func (i *Interpreter) Scan() {
+func (i *Interpreter) Scan() parser {
 	for i.scan() {
 	}
+	return parser{i.scanned, make([]Instruction, 0)}
 }
 
 // isValidCharacter returns true is the rune is an acceptable character (only letter)
