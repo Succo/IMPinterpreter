@@ -181,6 +181,7 @@ func (i *Interpreter) scan() bool {
 	return true
 }
 
+// Scan the input stream and build the list of scanned token
 func (i *Interpreter) Scan() {
 	for i.scan() {
 	}
