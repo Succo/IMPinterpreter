@@ -22,6 +22,9 @@ var precedence = map[tokenType]int{
 	Time:  0,
 	Plus:  1,
 	Minus: 1,
+	And:   0,
+	Or:    0,
+	Not:   1,
 }
 
 func precede(op1 tokenType, op2 tokenType) bool {
@@ -60,11 +63,11 @@ func addIOperator(out []IExpr, op Token) []IExpr {
 	out = out[:l-2]
 	switch op.ttype {
 	case Plus:
-		out = append(out, PlusExpr{x1, x2})
+		out = append(out, PlusExpr{x2, x1})
 	case Minus:
-		out = append(out, MinusExpr{x1, x2})
+		out = append(out, MinusExpr{x2, x1})
 	case Time:
-		out = append(out, TimeExpr{x1, x2})
+		out = append(out, TimeExpr{x2, x1})
 	}
 	return out
 }
@@ -118,9 +121,22 @@ tokenLoop:
 }
 
 func addBOperator(out []BExpr, op Token) []BExpr {
+	// vase wher it's an unary operator
+	if op.ttype == Not {
+		l := len(out)
+		if l < 1 { // that would mean two operator in a row
+			panic("Unexpected token while add Ioperator")
+		}
+		b := out[l-1]
+		out = out[:l-1]
+		out = append(out, NotExpr{b})
+		return out
+	}
+
 	l := len(out)
 	if l < 2 { // that would mean two operator in a row
-		panic("Unexpected token while add Ioperator")
+		fmt.Println(op.lexeme)
+		panic("Unexpected token while adding Boperator")
 	}
 	// Apply the operator to the two BExpr in out
 	b1 := out[l-1]
@@ -130,7 +146,7 @@ func addBOperator(out []BExpr, op Token) []BExpr {
 	case Or:
 		out = append(out, OrExpr{b1, b2})
 	case And:
-		out = append(out, OrExpr{b1, b2})
+		out = append(out, AndExpr{b1, b2})
 	}
 	return out
 }
@@ -149,9 +165,10 @@ tokenLoop:
 		case False:
 			out = append(out, FalseExpr{})
 			p.pop()
-		case Or, And:
+		case Or, And, Not:
 			for len(operators) > 0 {
 				operators, op := operators.pop()
+				fmt.Println(op.lexeme)
 				if precede(op.ttype, t.ttype) {
 					out = addBOperator(out, op)
 				} else {
@@ -159,7 +176,7 @@ tokenLoop:
 					break
 				}
 			}
-			operators.push(t)
+			operators = operators.push(t)
 			p.pop()
 		case Variable, Int:
 			expr1 := p.parseIExpr()
@@ -182,10 +199,6 @@ tokenLoop:
 				panic(fmt.Sprintf("Unmatched parentheses line %d", t.line))
 			}
 			p.pop()
-		case Not:
-			p.pop()
-			expr := p.parseBExpr()
-			out = append(out, expr)
 		default:
 			break tokenLoop
 		}

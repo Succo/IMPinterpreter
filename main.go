@@ -21,6 +21,7 @@ func main() {
 	}
 	l := NewLexer(bufio.NewReader(file))
 	p := l.Scan()
+	fmt.Println(l.scanned)
 	i := NewInterpreter(p.parseInst())
 	s := i.execute()
 	fmt.Println(i.i)
