@@ -112,3 +112,68 @@ func (a AndExpr) evaluate(s *State) bool {
 type State struct {
 	val map[string]int
 }
+
+type Instruction interface {
+	apply(*State) *State
+}
+
+type SkipInst struct{}
+
+func (skip SkipInst) apply(s *State) *State { return s }
+
+type AssignInst struct {
+	name string
+	val  IExpr
+}
+
+func (a AssignInst) apply(s *State) *State {
+	s.val[a.name] = a.val.evaluate(s)
+	return s
+}
+
+type WhileInst struct {
+	cond BExpr
+	loop []Instruction
+}
+
+func (w WhileInst) apply(s *State) *State {
+	tempP := Prog{s: s, i: w.loop}
+	for w.cond.evaluate(s) {
+		s = tempP.execute()
+	}
+	return s
+}
+
+type IfInst struct {
+	cond  BExpr
+	path1 []Instruction
+	path2 []Instruction
+}
+
+func (i IfInst) apply(s *State) *State {
+	var tempP *Prog
+	if i.cond.evaluate(s) {
+		tempP = &Prog{s: s, i: i.path1}
+	} else {
+		tempP = &Prog{s: s, i: i.path1}
+	}
+	return tempP.execute()
+}
+
+type Prog struct {
+	s *State
+	i []Instruction
+}
+
+func (p *Prog) execute() *State {
+	for _, inst := range p.i {
+		p.s = inst.apply(p.s)
+	}
+	return p.s
+}
+
+func NewProg() *Prog {
+	s := &State{make(map[string]int)}
+	i := make([]Instruction, 0)
+	return &Prog{s: s, i: i}
+}
