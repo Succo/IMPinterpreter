@@ -20,6 +20,7 @@ func main() {
 		panic(err.Error())
 	}
 	i := NewInterpreter(bufio.NewReader(file))
-	i.Scan()
-	fmt.Println(i.scanned)
+	p := i.Scan()
+	prog := NewProg()
+	prog.i = p.parseInst()
 }
