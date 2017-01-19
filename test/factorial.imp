@@ -3,3 +3,4 @@ y:=0;
 while x <= 99 do
 	x:= x+1;
 	y:= y+x
+print y

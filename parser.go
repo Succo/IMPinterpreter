@@ -217,9 +217,13 @@ tokenLoop:
 func (p *parser) parseInst() []Instruction {
 	insts := make([]Instruction, 0)
 	insts = append(insts, p.parse())
-	for p.tokens[0].ttype == Semicolon {
-		p.pop()
+	itype := insts[len(insts)-1].getType()
+	for p.tokens[0].ttype == Semicolon || itype == ifT || itype == whileT {
+		if p.tokens[0].ttype == Semicolon {
+			p.pop()
+		}
 		insts = append(insts, p.parse())
+		itype = insts[len(insts)-1].getType()
 	}
 	return insts
 }
@@ -233,10 +237,14 @@ func (p *parser) parse() Instruction {
 	case t.ttype == Variable:
 		eq := p.pop()
 		if eq.ttype != Assign {
+			fmt.Println(t.lexeme, t.line)
 			panic(fmt.Sprintf("Unexpected token %s line %d", eq.lexeme, eq.line))
 		}
 		expr := p.parseIExpr()
 		return AssignInst{name: t.lexeme, val: expr}
+	case t.ttype == Print:
+		expr := p.parseIExpr()
+		return PrintInst{expr}
 	case t.ttype == While:
 		expr := p.parseBExpr()
 		do := p.pop()

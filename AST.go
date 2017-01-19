@@ -1,5 +1,17 @@
 package main
 
+import "fmt"
+
+type instType int
+
+const (
+	whileT instType = iota
+	ifT
+	assignT
+	skipT
+	printT
+)
+
 // integer expression
 type IExpr interface {
 	evaluate(s *State) int
@@ -115,11 +127,23 @@ type State struct {
 
 type Instruction interface {
 	apply(*State) *State
+	getType() instType
 }
 
 type SkipInst struct{}
 
 func (skip SkipInst) apply(s *State) *State { return s }
+func (skip SkipInst) getType() instType     { return skipT }
+
+type PrintInst struct {
+	val IExpr
+}
+
+func (p PrintInst) apply(s *State) *State {
+	fmt.Println(p.val.evaluate(s))
+	return s
+}
+func (p PrintInst) getType() instType { return printT }
 
 type AssignInst struct {
 	name string
@@ -130,6 +154,7 @@ func (a AssignInst) apply(s *State) *State {
 	s.val[a.name] = a.val.evaluate(s)
 	return s
 }
+func (a AssignInst) getType() instType { return assignT }
 
 type WhileInst struct {
 	cond BExpr
@@ -143,6 +168,7 @@ func (w WhileInst) apply(s *State) *State {
 	}
 	return s
 }
+func (w WhileInst) getType() instType { return whileT }
 
 type IfInst struct {
 	cond  BExpr
@@ -159,6 +185,7 @@ func (i IfInst) apply(s *State) *State {
 	}
 	return tempP.execute()
 }
+func (i IfInst) getType() instType { return ifT }
 
 type Interpreter struct {
 	s *State
