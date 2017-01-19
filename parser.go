@@ -51,6 +51,10 @@ func (p *parser) pop() Token {
 	return t
 }
 
+func (p *parser) peek() Token {
+	return p.tokens[0]
+}
+
 func addIOperator(out []IExpr, op Token) []IExpr {
 	l := len(out)
 	if l < 2 { // that would mean two operator in a row
@@ -135,7 +139,6 @@ func addBOperator(out []BExpr, op Token) []BExpr {
 
 	l := len(out)
 	if l < 2 { // that would mean two operator in a row
-		fmt.Println(op.lexeme)
 		panic("Unexpected token while adding Boperator")
 	}
 	// Apply the operator to the two BExpr in out
@@ -217,13 +220,12 @@ tokenLoop:
 func (p *parser) parseInst() []Instruction {
 	insts := make([]Instruction, 0)
 	insts = append(insts, p.parse())
-	itype := insts[len(insts)-1].getType()
-	for p.tokens[0].ttype == Semicolon || itype == ifT || itype == whileT {
-		if p.tokens[0].ttype == Semicolon {
-			p.pop()
+	for p.peek().ttype == Semicolon {
+		p.pop()
+		if p.peek().ttype == Eof {
+			break
 		}
 		insts = append(insts, p.parse())
-		itype = insts[len(insts)-1].getType()
 	}
 	return insts
 }
@@ -237,7 +239,6 @@ func (p *parser) parse() Instruction {
 	case t.ttype == Variable:
 		eq := p.pop()
 		if eq.ttype != Assign {
-			fmt.Println(t.lexeme, t.line)
 			panic(fmt.Sprintf("Unexpected token %s line %d", eq.lexeme, eq.line))
 		}
 		expr := p.parseIExpr()
@@ -252,6 +253,10 @@ func (p *parser) parse() Instruction {
 			panic(fmt.Sprintf("Unexpected token %s line %d", do.lexeme, do.line))
 		}
 		loop := p.parseInst()
+		od := p.pop()
+		if od.ttype != Od {
+			panic(fmt.Sprintf("Unexpected token %s line %d", od.lexeme, od.line))
+		}
 		return WhileInst{cond: expr, loop: loop}
 	case t.ttype == If:
 		expr := p.parseBExpr()
@@ -261,10 +266,14 @@ func (p *parser) parse() Instruction {
 		}
 		path1 := p.parseInst()
 		if_ := p.pop()
-		if if_.ttype != Then {
+		if if_.ttype != Else {
 			panic(fmt.Sprintf("Unexpected token %s line %d", if_.lexeme, if_.line))
 		}
 		path2 := p.parseInst()
+		fi := p.pop()
+		if fi.ttype != Fi {
+			panic(fmt.Sprintf("Unexpected token %s line %d", fi.lexeme, fi.line))
+		}
 		return IfInst{cond: expr, path1: path1, path2: path2}
 	default:
 		panic(fmt.Sprintf("Unexpected token %s line %d", t.lexeme, t.line))

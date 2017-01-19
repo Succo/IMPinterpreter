@@ -34,7 +34,9 @@ const (
 	Semicolon
 	While
 	Do
+	Od
 	If
+	Fi
 	Then
 	Else
 	Print
@@ -169,12 +171,16 @@ func (l *Lexer) scan() bool {
 			l.addToken(While, "while")
 		case "do":
 			l.addToken(Do, "do")
+		case "od":
+			l.addToken(Od, "od")
 		case "if":
 			l.addToken(If, "if")
+		case "fi":
+			l.addToken(Fi, "fi")
 		case "then":
 			l.addToken(Then, "then")
 		case "else":
-			l.addToken(Then, "else")
+			l.addToken(Else, "else")
 		case "print":
 			l.addToken(Print, "print")
 		default:
