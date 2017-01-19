@@ -37,6 +37,7 @@ const (
 	If
 	Then
 	Else
+	Print
 
 	// Identifier
 	Int
@@ -124,9 +125,9 @@ func (l *Lexer) scanInt(r rune) string {
 func (l *Lexer) scan() bool {
 	r := l.read()
 	switch {
-	case unicode.IsSpace(r):
 	case r == '\n':
 		l.line++
+	case unicode.IsSpace(r):
 	case r == '+':
 		l.addToken(Plus, "+")
 	case r == '-':
@@ -174,6 +175,8 @@ func (l *Lexer) scan() bool {
 			l.addToken(Then, "then")
 		case "else":
 			l.addToken(Then, "else")
+		case "print":
+			l.addToken(Print, "print")
 		default:
 			l.addToken(Variable, w)
 		}
