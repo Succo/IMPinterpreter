@@ -28,4 +28,3 @@ c ::=skip
 
 This is a go program to interpret and execute program written in IMP.
 It only takes one argument, the name of a source file.
-It outputs the value of all affected variable, because there is no print instruction in IMP.
