@@ -57,7 +57,6 @@ type Token struct {
 }
 
 type Lexer struct {
-	sigma   map[string]int
 	prog    *bufio.Reader
 	scanned []Token
 
@@ -65,9 +64,8 @@ type Lexer struct {
 }
 
 func NewLexer(in *bufio.Reader) *Lexer {
-	sigma := make(map[string]int)
 	scanned := make([]Token, 0)
-	return &Lexer{sigma: sigma, prog: in, scanned: scanned, line: 0}
+	return &Lexer{prog: in, scanned: scanned, line: 0}
 }
 
 func (l *Lexer) read() rune {
