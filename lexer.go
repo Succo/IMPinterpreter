@@ -48,7 +48,7 @@ const (
 	Eof
 )
 
-var eof = rune(0)
+const eof = rune(0)
 
 type Token struct {
 	ttype  tokenType
